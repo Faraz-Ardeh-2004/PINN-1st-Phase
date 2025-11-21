@@ -1,135 +1,70 @@
-# $\Psi$-NN Project Description
+Physics-Informed Neural Networks (PINN) - Phase 1Solving Laplace and Poisson Equations📖 OverviewThis repository contains the implementation of Phase 1 of the Neural Networks course project. The primary objective is to solve Partial Differential Equations (PDEs)—specifically the Laplace and Poisson equations—using Physics-Informed Neural Networks (PINNs).The Mesh-Free ApproachIn this project, we aim to shift from traditional mesh-based numerical methods (such as the Finite Element Method (FEM) or Finite Difference Method (FDM)) to a mesh-free Deep Learning approach.Mesh-Free: Unlike classical solvers that require complex mesh generation and discretization, PINNs approximate the solution $u(x,y)$ directly using a neural network.Physics-Driven Loss: The network learns the unknown function by minimizing a composite loss function that enforces both the boundary conditions and the residual of the governing equations at randomly sampled collocation points.Automatic Differentiation: This approach leverages Automatic Differentiation (AD) to compute derivatives exactly, avoiding the truncation errors common in numerical schemes.📂 File StructureThe project is organized to separate configuration, execution, and analysis:.
+├── main.py                 # Core execution script (Data generation, Model training, Logic)
+├── visualization_utils.py  # Utility module for professional, publication-quality plots
+├── Laplace_EXP.csv         # Configuration file specific to the Laplace case
+└── Poisson_EXP.csv         # Configuration file specific to the Poisson case
+main.py: Handles network initialization, training loops, and calls visualization tools.visualization_utils.py: Computes error metrics and generates side-by-side comparisons of the PINN prediction vs. Ground Truth.🔬 Equations & Methodology1. Laplace EquationThe Laplace equation is a fundamental second-order PDE describing potential fields in regions free of sources (e.g., electrostatics in charge-free regions, steady-state heat conduction). The network minimizes the residual $\mathcal{L}_{PDE} = ||\nabla^2 u||^2$ across the domain defined in Laplace_EXP.csv.$$\nabla^2 u = \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} = 0
+$$### 2\. Poisson Equation
 
-$\Psi$-NN adopts a three-step method of "distillation - structure extraction - network reconstruction", which can automatically discover and implicitly embed the physical properties of PDEs into the MLP network structure.
+The Poisson equation generalizes the Laplace equation to model systems containing a source or sink term. It relates the potential field to a distributed source density, denoted by $f(x, y)$.
 
-![pipeline](image/README/pipeline.png "Pipeline")
+$$\nabla^2 u = f(x, y)
+$$In this phase, the source function $f(x, y)$ is chosen specifically such that an **analytical exact solution** exists. This allows us to effectively benchmark the neural network's accuracy against a known ground truth.
 
-## Example Settings
+-----
 
-This codebase provides the $\Psi$-NN method used in the paper, including examples for the Laplace equation, Burgers equation, Poisson equation, and steady-state N-S equations. You can use `Panel.py` to call different config files to enable the corresponding examples.
+## 📊 Results & Visualization
 
-**Recommended Environment:**
+Visualizing the raw output of a neural network is insufficient for scientific validation. To rigorously evaluate the model, we calculate quantitative error metrics:
 
-- Python version: 3.11.3
-- CUDA version: 11.7
-- GPU: RTX 4080
-- CPU: Intel 12400f
+  * **Absolute Error:** Point-wise difference $|u_{exact} - u_{pred}|$.
+  * **Relative $L_2$ Error:** Global accuracy metric.
 
-**Dependency Installation:**
+### Visual Outputs
 
-Please install dependencies according to the `requirements.txt` file:
+The `visualization_utils.py` script generates a comprehensive composite figure containing three side-by-side plots:
+
+1.  **Exact Solution (Ground Truth):** The mathematically correct solution derived analytically.
+2.  **PINN Prediction:** The solution approximated by the trained neural network.
+3.  **Absolute Error Map:** A spatial heatmap showing the error distribution. This is critical for identifying regions where the model struggles (e.g., near sharp gradients).
+
+> **Note:** Output plots are saved with the `_comparison_PINN.png` suffix (e.g., `Laplace_comparison_PINN.png`) to distinguish them from legacy outputs.
+
+-----
+
+## 🚀 Usage Guide
+
+### 1\. Installation
+
+Ensure your environment is set up with the necessary scientific computing and deep learning libraries:
 
 ```bash
-pip install -r requirements.txt
+pip install numpy matplotlib torch pandas
 ```
 
-If you need to change dependencies, modify `requirements.txt` and reinstall.
+### 2\. Training & Plotting
 
-## Code Structure
+Run the main script to initiate the training process. The script will automatically parse the CSV configuration, train the model, and generate results.
 
-- **Config/**: Stores hyperparameter configurations (e.g., number of nodes, iterations) for different examples in CSV format. Once computed, configurations should not be changed.
-- **Database/**: Stores data required for preset examples (CSV format). You can replace with your own data, but file names must remain the same.
-- **Module/**: Contains computational models and workflows.
-  - `Training.py`: Core computation methods, including $\Psi$-NN and all examples.
-  - `SingleVis.py`, `GroupVis.py`: For result visualization.
-  - Other NN-related files: For modular neural network construction. Files with the PINN-post suffix use different hard mapping functions.
-- **image/**: Stores images for the README.
-- **Panel.py**: Console entry point for easy model invocation. Input the config file name and index to run.
-- **pic_parameter.ipynb**: For visualizing the distilled structure of $\Psi$-NN.
-- **Results/**: Automatically generated after the first run to save output results.
-
-## Example Results
-
-Taking the Burgers equation as an example:
-
-![Burgers_setting](image/README/burgers_exact_sample.png "Burgers setting")
-
-Its mathematical expression is:
-
-$$
-\mathcal{L}:= u_t - u u_x - \lambda_1 u_{xx} = 0, \quad x \in [-1, 1], \quad t \in [0, 1]
-$$
-
-Loss function definition:
-
-![Formula](image/README/formula.png)
-
-<!-- $$
-\begin{aligned}
-    & MSE = \omega_{f'} MSE_{f'} + \omega_{D} MSE_D \\
-    & \omega_{f'} = \omega_D = 1 \\
-    & MSE_{f'} = \frac{1}{M_{f'}} \sum_{i=1}^{M_{f'}} \left| \tilde{u}_t^i - \tilde{u}^i \tilde{u}_x^i - \lambda_1 \tilde{u}_{xx}^i \right|^2 \\
-    & MSE_D = \frac{1}{M_D} \sum_{i=1}^{M_D} \left| \tilde{u}^i - \check{u}^i \right|^2
-\end{aligned}
-$$ -->
-
-Where:
-
-- $\omega_{f'} = \omega_D = 1$
-- $M_{f'}$, $M_D$ are the number of sampling points for the equation and data, respectively.
-
-**$\Psi$-NN Example**
-In `Panel.py`, call `Burgers_inv_distill_EXP.csv` and use `pic_parameter.ipynb` to visualize the clustering results of the student network structure.
-
-![Cluster_results](image/README/k=0_cluster.png "cluster results")
-
-The left shows weight clustering, the right shows bias clustering, and from top to bottom are layers 1 to 4. The clustering results show trends; specific values may differ across devices, but the structure is similar.
-
-The .ipynb file can also output the replacement results of cluster centers (example):
-
-```
-Layer: fc1.weight
-Symbolized Weights Matrix:
-[['-A' 'B']
- ['-A' 'B']
- ['-A' 'B']
- ['-A' 'B']
- ['-B' '-A']
- ['A' '-B']
- ['B' 'A']
- ['B' 'A']
- ['-B' 'A']
- ['-B' 'A']
- ['-B' '-A']
- ['B' 'A']
- ['A' '-B']
- ['-A' '-B']
- ['-B' '-A']
- ['-B' '-A']]
-Cluster Mapping (Letter -> Center):
-A: 1.225144624710083
-B: 0.043349750339984894
-Layer: fc1.bias
-Symbolized Weights Matrix:
-['A' 'A' 'A' 'A' 'A' '-A' '-A' '-A' '-A' '-A' 'A' '-A' '-A' 'A' 'A' 'A']
-Cluster Mapping (Letter -> Center):
-A: 0.012397093698382378
+```bash
+python main.py
 ```
 
-**Comparison Experiments**
-(In `Panel.py`, call `Burgers_EXP.csv` to compare the loss curves of $\Psi$-NN, PINN, and PINN-post.)
+*Tip: Monitor the console for loss values to ensure the physics loss and boundary loss are converging.*
 
-![Burgers_results](image/README/Burgers_inv_comp_loss_comparison.png "Burgers_results")
+-----
 
----
+## ⚙️ Configuration
 
----
+You can modify experiment parameters in the `.csv` files (`Laplace_EXP.csv` or `Poisson_EXP.csv`) without changing the source code.
 
-## License
+| Parameter | Description | Impact |
+| :--- | :--- | :--- |
+| **`grid_node_num`** | Number of internal collocation points. | Controls where the PDE is enforced. Higher numbers usually improve accuracy but increase training time. |
+| **`figure_node_num`** | Resolution of the output images. | Default is usually 200x200. Increase this for higher-quality publication plots. |
+| **`hidden_layers_group`** | Network architecture. | Defines the depth and width (neurons per layer) of the neural network. |
+| **`domain_limits`** | (Implied in CSV) $x$ and $y$ ranges. | Defines the physical boundaries of the simulation. |
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](./LICENSE) file for details.
+-----
 
-## Citation
-
-If you use this code in your research, please cite this project:
-
-```bibtex
-@article{liu_2025_automatic,
-  title={Automatic Network Structure Discovery of Physics Informed Neural Networks via Knowledge Distillation},
-  author={Liu, Ziti and Liu, Yang and Yan, Xunshi and Liu, Wen and Nie, Han and Guo, Shuaiqi and Zhang, Chen-an},
-  note={Manuscript accept in principle},
-  year={2025}
-}
-```
-
-If you have any questions, feel free to submit an issue or contact the author.
+**Developer:** [Faraz-Ardeh-2004](https://www.google.com/search?q=https://github.com/Faraz-Ardeh-2004)$$
